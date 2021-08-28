@@ -8,7 +8,7 @@ import ir.ceit.resa.model.EMembership;
 public class BoardInfoResponse {
 
     @JsonProperty("id")
-    private Integer id;
+    private Long id;
 
     @JsonProperty("boardId")
     private String boardId;
@@ -32,22 +32,23 @@ public class BoardInfoResponse {
     private EMembership userMembership;
 
 
-    public BoardInfoResponse(Integer id, String boardId,
+    public BoardInfoResponse(Long id, String boardId,
                              String description, String category,
-                             String creatorUsername, String faculty) {
+                             String creatorUsername, String faculty, EMembership userMembership) {
         this.id = id;
         this.boardId = boardId;
         this.description = description;
         this.category = category;
         this.creatorUsername = creatorUsername;
         this.faculty = faculty;
+        this.userMembership = userMembership;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 

@@ -1,5 +1,6 @@
 package ir.ceit.resa.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.*;
@@ -18,6 +19,7 @@ import java.util.Set;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long id;
 
     @NotBlank
@@ -52,8 +54,13 @@ public class User {
     @JoinTable(name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
-    @JsonProperty("lastName")
+    @JsonProperty("roles")
     private Set<Role> roles = new HashSet<>();
+
+    @OneToMany(mappedBy = "primaryKey.user",
+            cascade = CascadeType.ALL)
+    private Set<BoardMembership> boardMemberships = new HashSet<>();
+
 
     public User() {
     }
@@ -129,5 +136,22 @@ public class User {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    @JsonIgnore
+    public Set<BoardMembership> getBoardMemberships() {
+        return boardMemberships;
+    }
+
+    public void setBoardMemberships(Set<BoardMembership> boardMemberships) {
+        this.boardMemberships = boardMemberships;
+    }
+
+    public void addBoard(BoardMembership boardMembership) {
+        this.boardMemberships.add(boardMembership);
+    }
+
+    public void deleteBoard(BoardMembership boardMembership) {
+        this.boardMemberships.remove(boardMembership);
     }
 }

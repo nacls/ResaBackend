@@ -5,20 +5,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "boards",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = "boardId")})
+                @UniqueConstraint(columnNames = "board_name")})
 public class Board {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    @Column(name = "board_id")
+    private Long id;
 
     @NotBlank
     @Size(max = 40)
-    @JsonProperty("boardId")
+    @Column(name = "board_name")
+    @JsonProperty("board_name")
     private String boardId;
 
     @NotBlank
@@ -43,6 +46,11 @@ public class Board {
             cascade = CascadeType.ALL)
     private Set<Announcement> announcements;
 
+    @OneToMany(mappedBy = "primaryKey.board",
+            cascade = CascadeType.ALL)
+    private Set<BoardMembership> boardMemberships = new HashSet<BoardMembership>();
+
+
 
     public Board() {
     }
@@ -57,11 +65,11 @@ public class Board {
         this.faculty = faculty;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -111,5 +119,22 @@ public class Board {
 
     public void setAnnouncements(Set<Announcement> announcements) {
         this.announcements = announcements;
+    }
+
+
+    public Set<BoardMembership> getBoardMemberships() {
+        return boardMemberships;
+    }
+
+    public void setBoardMemberships(Set<BoardMembership> boardMemberships) {
+        this.boardMemberships = boardMemberships;
+    }
+
+    public void addBoardMembership(BoardMembership boardMembership) {
+        this.boardMemberships.add(boardMembership);
+    }
+
+    public void deleteBoardMembership(BoardMembership boardMembership) {
+        this.boardMemberships.remove(boardMembership);
     }
 }
