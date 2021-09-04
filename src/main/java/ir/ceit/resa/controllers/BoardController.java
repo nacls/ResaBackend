@@ -1,14 +1,14 @@
 package ir.ceit.resa.controllers;
 
 import ir.ceit.resa.model.*;
-import ir.ceit.resa.payload.request.AddUserRequest;
 import ir.ceit.resa.payload.request.CreateBoardRequest;
+import ir.ceit.resa.payload.request.SearchBoardRequest;
 import ir.ceit.resa.payload.response.BoardInfoResponse;
 import ir.ceit.resa.payload.response.MessageResponse;
 import ir.ceit.resa.repository.BoardMembershipRepository;
 import ir.ceit.resa.repository.BoardRepository;
-import ir.ceit.resa.repository.RoleRepository;
 import ir.ceit.resa.repository.UserRepository;
+import ir.ceit.resa.services.MembershipService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +18,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -31,19 +29,45 @@ public class BoardController {
     UserRepository userRepository;
 
     @Autowired
-    RoleRepository roleRepository;
-
-    @Autowired
     BoardRepository boardRepository;
 
     @Autowired
     BoardMembershipRepository membershipRepository;
 
+    @Autowired
+    MembershipService membershipService;
 
-    @GetMapping("/search/{boardString}")
+    @GetMapping("/search")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
-    public ResponseEntity<?> searchBoards(@PathVariable("boardString") String boardString, @Valid @RequestBody AddUserRequest signUpRequest) {
-        return null;
+    public ResponseEntity<?> searchBoards(@Valid @RequestBody SearchBoardRequest searchBoardRequest) {
+        List<Board> searchResultBoards = boardRepository.findByBoardIdContaining(searchBoardRequest.getBoardId());
+        String loggedInUser = "";
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            loggedInUser = ((UserDetails) principal).getUsername();
+        }
+
+        if (searchResultBoards.size() == 0) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("no boards found"));
+        } else {
+            List<BoardInfoResponse> infoBoards = new ArrayList<>();
+            for (Board searchResultBoard : searchResultBoards) {
+                String boardId = searchResultBoard.getBoardId();
+                BoardInfoResponse temp = new BoardInfoResponse(
+                        searchResultBoard.getId(),
+                        boardId,
+                        searchResultBoard.getDescription(),
+                        searchResultBoard.getCategory(),
+                        searchResultBoard.getCreatorUsername(),
+                        searchResultBoard.getFaculty(),
+                        membershipService.findMembershipStatus(loggedInUser, boardId)
+                );
+                infoBoards.add(temp);
+            }
+            return ResponseEntity.ok(infoBoards);
+        }
     }
 
     @GetMapping("/joined/{username}")
@@ -143,10 +167,17 @@ public class BoardController {
     }
 
 
-    @GetMapping("/leave/{boardId}/{username}")
+    @PutMapping("/leave/{boardId}")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> userLeaveBoard(@PathVariable String boardId) {
-        return null;
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            String loggedInUser = ((UserDetails) principal).getUsername();
+            boolean ok = membershipService.removeUserFromBoard(loggedInUser, boardId);
+            if (ok)
+                return ResponseEntity.ok(new MessageResponse("user left board!"));
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse("something went wrong"));
     }
 
 
@@ -194,6 +225,7 @@ public class BoardController {
         return null;
     }
 
+
     @GetMapping("/writer/{boardId}")
     @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> configureWriterAccessRight(@PathVariable String boardId) {
@@ -225,6 +257,9 @@ public class BoardController {
                 Optional<BoardMembership> boardMembership = membershipRepository.findById(membershipId);
                 if (boardMembership.isPresent()) {
                     membership = boardMembership.get().getStatus();
+
+                } else {
+                    membership = EMembership.NOT_JOINED;
                 }
             }
         }

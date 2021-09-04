@@ -74,7 +74,7 @@ public class AuthController {
 
     @GetMapping("/logout")
     public String logoutUser(HttpServletRequest request, HttpServletResponse response) {
-        return "I DONT KNOW!";
+        return null;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
