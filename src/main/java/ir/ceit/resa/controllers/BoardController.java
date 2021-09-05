@@ -2,12 +2,14 @@ package ir.ceit.resa.controllers;
 
 import ir.ceit.resa.model.*;
 import ir.ceit.resa.payload.request.CreateBoardRequest;
+import ir.ceit.resa.payload.request.EditBoardRequest;
 import ir.ceit.resa.payload.request.SearchBoardRequest;
 import ir.ceit.resa.payload.response.BoardInfoResponse;
 import ir.ceit.resa.payload.response.MessageResponse;
 import ir.ceit.resa.repository.BoardMembershipRepository;
 import ir.ceit.resa.repository.BoardRepository;
 import ir.ceit.resa.repository.UserRepository;
+import ir.ceit.resa.services.BoardService;
 import ir.ceit.resa.services.MembershipService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -36,6 +38,9 @@ public class BoardController {
 
     @Autowired
     MembershipService membershipService;
+
+    @Autowired
+    BoardService boardService;
 
     @GetMapping("/search")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
@@ -219,10 +224,21 @@ public class BoardController {
     }
 
 
-    @GetMapping("/edit/{boardId}")
+    @PutMapping("/edit/{boardId}")
     @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
-    public ResponseEntity<?> editBoard(@PathVariable String boardId) {
-        return null;
+    public ResponseEntity<?> editBoard(@PathVariable String boardId, @Valid @RequestBody EditBoardRequest editBoardRequest) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            String loggedInUser = ((UserDetails) principal).getUsername();
+            if (loggedInUser.equals(boardService.getBoardCreatorByBoardId(boardId))) {
+                if (boardService.loadBoardByBoardId(boardId) != null) {
+                    return ResponseEntity.ok().body(boardService.editBoard(loggedInUser, boardId, editBoardRequest));
+                }
+            } else {
+                return ResponseEntity.badRequest().body(new MessageResponse("Not creator, access denied"));
+            }
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse("User not found"));
     }
 
 

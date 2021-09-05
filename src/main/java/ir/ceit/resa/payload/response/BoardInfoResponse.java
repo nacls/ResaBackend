@@ -91,4 +91,20 @@ public class BoardInfoResponse {
     public void setFaculty(String faculty) {
         this.faculty = faculty;
     }
+
+    public Announcement getLatestAnnouncement() {
+        return latestAnnouncement;
+    }
+
+    public void setLatestAnnouncement(Announcement latestAnnouncement) {
+        this.latestAnnouncement = latestAnnouncement;
+    }
+
+    public EMembership getUserMembership() {
+        return userMembership;
+    }
+
+    public void setUserMembership(EMembership userMembership) {
+        this.userMembership = userMembership;
+    }
 }
