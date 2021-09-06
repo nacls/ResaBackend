@@ -1,6 +1,7 @@
 package ir.ceit.resa.controllers;
 
 import ir.ceit.resa.model.*;
+import ir.ceit.resa.payload.request.ChangeMembershipRequest;
 import ir.ceit.resa.payload.request.CreateBoardRequest;
 import ir.ceit.resa.payload.request.EditBoardRequest;
 import ir.ceit.resa.payload.request.SearchBoardRequest;
@@ -11,6 +12,7 @@ import ir.ceit.resa.repository.BoardRepository;
 import ir.ceit.resa.repository.UserRepository;
 import ir.ceit.resa.services.BoardService;
 import ir.ceit.resa.services.MembershipService;
+import ir.ceit.resa.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,68 +44,42 @@ public class BoardController {
     @Autowired
     BoardService boardService;
 
+    @Autowired
+    UserService userService;
+
     @GetMapping("/search")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> searchBoards(@Valid @RequestBody SearchBoardRequest searchBoardRequest) {
-        List<Board> searchResultBoards = boardRepository.findByBoardIdContaining(searchBoardRequest.getBoardId());
-        String loggedInUser = "";
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            loggedInUser = ((UserDetails) principal).getUsername();
+        User user = userService.getLoggedInUser();
+        if (user == null) {
+            return ResponseEntity.badRequest().body(new MessageResponse("user doesn't exist"));
         }
 
-        if (searchResultBoards.size() == 0) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("no boards found"));
-        } else {
-            List<BoardInfoResponse> infoBoards = new ArrayList<>();
-            for (Board searchResultBoard : searchResultBoards) {
-                String boardId = searchResultBoard.getBoardId();
-                BoardInfoResponse temp = new BoardInfoResponse(
-                        searchResultBoard.getId(),
-                        boardId,
-                        searchResultBoard.getDescription(),
-                        searchResultBoard.getCategory(),
-                        searchResultBoard.getCreatorUsername(),
-                        searchResultBoard.getFaculty(),
-                        membershipService.findMembershipStatus(loggedInUser, boardId)
-                );
-                infoBoards.add(temp);
-            }
-            return ResponseEntity.ok(infoBoards);
+        List<Board> searchResultBoards = boardRepository.findByBoardIdContaining(searchBoardRequest.getBoardId());
+        List<BoardInfoResponse> infoBoards = new ArrayList<>();
+        for (Board searchResultBoard : searchResultBoards) {
+            BoardInfoResponse temp = boardService.getBoardInfoResponse(user.getUsername(), searchResultBoard);
+            infoBoards.add(temp);
         }
+        Collections.sort(infoBoards);
+        return ResponseEntity.ok(infoBoards);
+
     }
 
     @GetMapping("/joined/{username}")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> getUserJoinedBoards(@PathVariable("username") String username) {
-
-        if (userRepository.existsByUsername(username)) {
-            Optional<User> user = userRepository.findByUsername(username);
-            if (user.isPresent()) {
-
-                Set<BoardInfoResponse> boardInfoResponses = new HashSet<>();
-
-                Set<BoardMembership> boardMemberships = user.get().getBoardMemberships();
-
-                for (BoardMembership next : boardMemberships) {
-                    BoardInfoResponse temp = new BoardInfoResponse(next.getBoard().getId(),
-                            next.getBoard().getBoardId(),
-                            next.getBoard().getDescription(),
-                            next.getBoard().getCategory(),
-                            next.getBoard().getCreatorUsername(),
-                            next.getBoard().getFaculty(),
-                            next.getStatus());
-                    boardInfoResponses.add(temp);
-                }
-                return ResponseEntity.ok().body(boardInfoResponses);
-
-            } else {
-                return ResponseEntity
-                        .badRequest()
-                        .body(new MessageResponse("Error: user doesn't exist!"));
+        User user = userService.loadUserByUsername(username);
+        if (user != null) {
+            List<BoardInfoResponse> boardInfoResponses = new ArrayList<>();
+            Set<BoardMembership> boardMemberships = user.getBoardMemberships();
+            for (BoardMembership next : boardMemberships) {
+                BoardInfoResponse temp = boardService
+                        .getBoardInfoResponse(user.getUsername(), next.getBoard());
+                boardInfoResponses.add(temp);
             }
+            Collections.sort(boardInfoResponses);
+            return ResponseEntity.ok().body(boardInfoResponses);
         }
         return ResponseEntity
                 .badRequest()
@@ -140,17 +116,16 @@ public class BoardController {
         }
     }
 
-    @GetMapping("/join/{username}/{boardId}")
+    @GetMapping("/join/{boardId}")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
-    public ResponseEntity<?> addUserToBoard(@PathVariable("username") String username,
-                                            @PathVariable String boardId) {
+    public ResponseEntity<?> userJoinBoard(@PathVariable String boardId) {
 
-        Optional<User> user = userRepository.findByUsername(username);
-        Optional<Board> board = boardRepository.findByBoardId(boardId);
-        if (user.isPresent() && board.isPresent()) {
+        User user = userService.getLoggedInUser();
+        Board board = boardService.loadBoardByBoardId(boardId);
+        if (user != null && board != null) {
             BoardMembershipId membershipId = new BoardMembershipId();
-            membershipId.setUser(user.get());
-            membershipId.setBoard(board.get());
+            membershipId.setUser(user);
+            membershipId.setBoard(board);
             Optional<BoardMembership> boardMembership = membershipRepository.findById(membershipId);
             if (boardMembership.isPresent()) {
                 return ResponseEntity
@@ -158,8 +133,8 @@ public class BoardController {
                         .body(new MessageResponse("Error: membership exists: " + boardMembership.get().getStatus()));
             } else {
                 BoardMembership newBoardMembership = new BoardMembership();
-                newBoardMembership.setUser(user.get());
-                newBoardMembership.setBoard(board.get());
+                newBoardMembership.setUser(user);
+                newBoardMembership.setBoard(board);
                 newBoardMembership.setStatus(EMembership.REGULAR_MEMBER);
                 membershipRepository.save(newBoardMembership);
                 return ResponseEntity.ok().body("membership added");
@@ -167,7 +142,7 @@ public class BoardController {
         } else {
             return ResponseEntity
                     .badRequest()
-                    .body(new MessageResponse("Error: user doesn't exist!"));
+                    .body(new MessageResponse("Error: user or board doesn't exist!"));
         }
     }
 
@@ -175,14 +150,15 @@ public class BoardController {
     @PutMapping("/leave/{boardId}")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> userLeaveBoard(@PathVariable String boardId) {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            String loggedInUser = ((UserDetails) principal).getUsername();
-            boolean ok = membershipService.removeUserFromBoard(loggedInUser, boardId);
-            if (ok)
+        User user = userService.getLoggedInUser();
+        if (user != null) {
+            if (membershipService.removeUserFromBoard(user, boardId))
                 return ResponseEntity.ok(new MessageResponse("user left board!"));
+            else
+                return ResponseEntity.badRequest().body(new MessageResponse("something went wrong"));
+        }else {
+            return ResponseEntity.badRequest().body(new MessageResponse("user doesn't exist"));
         }
-        return ResponseEntity.badRequest().body(new MessageResponse("something went wrong"));
     }
 
 
@@ -242,55 +218,36 @@ public class BoardController {
     }
 
 
-    @GetMapping("/writer/{boardId}")
+    @PutMapping("/access-control")
     @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
-    public ResponseEntity<?> configureWriterAccessRight(@PathVariable String boardId) {
-        return null;
+    public ResponseEntity<?> configureUserAccessRight(@Valid @RequestBody ChangeMembershipRequest membershipRequest) {
+        boolean status = boardService.changeBoardMembershipStatus(membershipRequest);
+        if (status) {
+            return ResponseEntity.ok(new MessageResponse("membership changed"));
+        } else {
+            return ResponseEntity.badRequest().body(new MessageResponse("Something went wrong"));
+        }
     }
 
     @GetMapping("/get/{boardId}")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> getBoardInfo(@PathVariable String boardId) {
 
-        EMembership membership = null;
-        Optional<Board> board = boardRepository.findByBoardId(boardId);
-
-        if (!board.isPresent()) {
+        Board board = boardService.loadBoardByBoardId(boardId);
+        User user = userService.getLoggedInUser();
+        if (board == null) {
             return ResponseEntity
                     .badRequest()
                     .body(new MessageResponse("Error: board doesn't exist!"));
 
         }
 
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserDetails) {
-            String loggedInUser = ((UserDetails) principal).getUsername();
-            Optional<User> user = userRepository.findByUsername(loggedInUser);
-            if (user.isPresent()) {
-                BoardMembershipId membershipId = new BoardMembershipId();
-                membershipId.setUser(user.get());
-                membershipId.setBoard(board.get());
-                Optional<BoardMembership> boardMembership = membershipRepository.findById(membershipId);
-                if (boardMembership.isPresent()) {
-                    membership = boardMembership.get().getStatus();
-
-                } else {
-                    membership = EMembership.NOT_JOINED;
-                }
-            }
+        if (user == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: user doesn't exist!"));
         }
 
-
-        Board existingBoard = board.get();
-        BoardInfoResponse boardInfoResponse = new BoardInfoResponse(
-                existingBoard.getId(),
-                existingBoard.getBoardId(),
-                existingBoard.getDescription(),
-                existingBoard.getCategory(),
-                existingBoard.getCreatorUsername(),
-                existingBoard.getFaculty(),
-                membership
-        );
-        return ResponseEntity.ok(boardInfoResponse);
+        return ResponseEntity.ok(boardService.getBoardInfoResponse(user.getUsername(), board));
     }
 }

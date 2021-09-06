@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import ir.ceit.resa.model.Announcement;
 import ir.ceit.resa.model.EMembership;
 
-public class BoardInfoResponse {
+public class BoardInfoResponse implements Comparable<BoardInfoResponse> {
 
     @JsonProperty("id")
     private Long id;
@@ -34,7 +34,8 @@ public class BoardInfoResponse {
 
     public BoardInfoResponse(Long id, String boardId,
                              String description, String category,
-                             String creatorUsername, String faculty, EMembership userMembership) {
+                             String creatorUsername, String faculty, EMembership userMembership,
+                             Announcement latestAnnouncement) {
         this.id = id;
         this.boardId = boardId;
         this.description = description;
@@ -42,6 +43,7 @@ public class BoardInfoResponse {
         this.creatorUsername = creatorUsername;
         this.faculty = faculty;
         this.userMembership = userMembership;
+        this.latestAnnouncement = latestAnnouncement;
     }
 
     public Long getId() {
@@ -106,5 +108,17 @@ public class BoardInfoResponse {
 
     public void setUserMembership(EMembership userMembership) {
         this.userMembership = userMembership;
+    }
+
+
+    @Override
+    public int compareTo(BoardInfoResponse o) {
+        if (getLatestAnnouncement() == null) {
+            return (o.getLatestAnnouncement() == null) ? 0 : 1;
+        }
+        if (o.getLatestAnnouncement() == null) {
+            return -1;
+        }
+        return getLatestAnnouncement().compareTo(o.getLatestAnnouncement());
     }
 }

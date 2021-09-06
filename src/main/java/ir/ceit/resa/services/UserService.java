@@ -4,6 +4,8 @@ package ir.ceit.resa.services;
 import ir.ceit.resa.model.User;
 import ir.ceit.resa.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -20,6 +22,15 @@ public class UserService {
             if (user.isPresent()) {
                 return user.get();
             }
+        }
+        return null;
+    }
+
+    public User getLoggedInUser() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetails) {
+            String loggedInUser = ((UserDetails) principal).getUsername();
+            return loadUserByUsername(loggedInUser);
         }
         return null;
     }

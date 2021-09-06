@@ -1,6 +1,7 @@
 package ir.ceit.resa.services;
 
 import ir.ceit.resa.model.Board;
+import ir.ceit.resa.payload.request.ChangeMembershipRequest;
 import ir.ceit.resa.payload.request.EditBoardRequest;
 import ir.ceit.resa.payload.response.BoardInfoResponse;
 import ir.ceit.resa.repository.BoardRepository;
@@ -17,6 +18,12 @@ public class BoardService {
 
     @Autowired
     private MembershipService membershipService;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private AnnouncementService announcementService;
 
     public Board loadBoardByBoardId(String boardId) {
         if (boardRepository.existsByBoardId(boardId)) {
@@ -52,6 +59,20 @@ public class BoardService {
                 board.getCategory(),
                 board.getCreatorUsername(),
                 board.getFaculty(),
-                membershipService.findMembershipStatus(username, board.getBoardId()));
+                membershipService.findMembershipStatus(username, board.getBoardId()),
+                announcementService.getBoardLatestAnnouncement(board));
+    }
+
+    public boolean changeBoardMembershipStatus(ChangeMembershipRequest changeMembershipRequest) {
+        if (isLoggedInUserBoardCreator(changeMembershipRequest.getBoardId())) {
+            return membershipService.changeMembershipStatus(changeMembershipRequest);
+        }
+        return false;
+    }
+
+    public boolean isLoggedInUserBoardCreator(String boardId) {
+        String boardCreatorUsername = getBoardCreatorByBoardId(boardId);
+        String loggedInUser = userService.getLoggedInUser().getUsername();
+        return boardCreatorUsername.equalsIgnoreCase(loggedInUser);
     }
 }
