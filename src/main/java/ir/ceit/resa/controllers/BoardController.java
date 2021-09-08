@@ -57,7 +57,7 @@ public class BoardController {
 
     @PostMapping("/create")
     @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
-    public ResponseEntity<?> createBoard(@Valid @RequestBody CreateBoardRequest createBoardRequest) throws InterruptedException {
+    public ResponseEntity<?> createBoard(@Valid @RequestBody CreateBoardRequest createBoardRequest){
         Board board = boardService.loadBoardByBoardId(createBoardRequest.getBoardId());
         if (board != null) {
             return ResponseEntity

@@ -120,7 +120,7 @@ public class BoardService {
         return boardInfoResponses;
     }
 
-    public BoardInfoResponse createBoard(CreateBoardRequest createBoardRequest, User user) throws InterruptedException {
+    public BoardInfoResponse createBoard(CreateBoardRequest createBoardRequest, User user){
         Board board = new Board(createBoardRequest.getBoardId(),
                 createBoardRequest.getDescription(),
                 createBoardRequest.getCategory(),
