@@ -4,6 +4,7 @@ import ir.ceit.resa.model.ERole;
 import ir.ceit.resa.model.Role;
 import ir.ceit.resa.model.User;
 import ir.ceit.resa.payload.request.AddUserRequest;
+import ir.ceit.resa.payload.request.ChangePasswordRequest;
 import ir.ceit.resa.payload.request.LoginRequest;
 import ir.ceit.resa.payload.response.JwtResponse;
 import ir.ceit.resa.payload.response.MessageResponse;
@@ -11,6 +12,7 @@ import ir.ceit.resa.repository.RoleRepository;
 import ir.ceit.resa.repository.UserRepository;
 import ir.ceit.resa.security.jwt.JwtUtils;
 import ir.ceit.resa.security.services.UserDetailsImpl;
+import ir.ceit.resa.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,6 +50,9 @@ public class AuthController {
 
     @Autowired
     JwtUtils jwtUtils;
+
+    @Autowired
+    UserService userService;
 
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -131,5 +136,20 @@ public class AuthController {
         userRepository.save(user);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+
+    @PostMapping("/change-pass")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
+
+        User user = userService.getLoggedInUser();
+        if (user != null) {
+            user.setPassword(encoder.encode(changePasswordRequest.getNewPassword()));
+            userRepository.save(user);
+            return ResponseEntity.ok(new MessageResponse("Password changed successfully!"));
+        } else {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("User doesn't exist"));
+        }
     }
 }

@@ -20,10 +20,10 @@ public class AnnouncementService {
     @Autowired
     private BoardService boardService;
 
-    @Autowired
-    private UserService userService;
-
     public Announcement getBoardLatestAnnouncement(Board board) {
+        if (board.getAnnouncements() == null) {
+            return null;
+        }
         List<Announcement> announcementList = new ArrayList<>(board.getAnnouncements());
         if (announcementList.size() == 0) {
             return null;
@@ -39,18 +39,14 @@ public class AnnouncementService {
         return announcements;
     }
 
-    public boolean postAnnouncementToBoard(Board board, CreateAnnouncementRequest announcementRequest) {
-        // check if logged in user can write in this board
-        String loggedInUser = userService.getLoggedInUser().getUsername();
-        if (loggedInUser == null)
-            return false;
+    public void postAnnouncementToBoard(Board board
+            , String writerUsername
+            , CreateAnnouncementRequest announcementRequest) {
         Announcement announcement = new Announcement(announcementRequest.getCreationDate(),
                 announcementRequest.getMessage(),
-                loggedInUser,
+                writerUsername,
                 board);
-
         announcementRepository.save(announcement);
-        return true;
     }
 
 }

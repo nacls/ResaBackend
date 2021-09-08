@@ -2,7 +2,6 @@ package ir.ceit.resa.services;
 
 
 import ir.ceit.resa.model.*;
-import ir.ceit.resa.payload.request.ChangeMembershipRequest;
 import ir.ceit.resa.repository.BoardMembershipRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,15 +13,15 @@ import java.util.Set;
 public class MembershipService {
 
     @Autowired
-    BoardMembershipRepository membershipRepository;
+    private BoardMembershipRepository membershipRepository;
 
     @Autowired
-    BoardService boardService;
+    private BoardService boardService;
 
     @Autowired
-    UserService userService;
+    private UserService userService;
 
-    public EMembership findMembershipStatus(String username, String boardId) {
+    EMembership findMembershipStatus(String username, String boardId) {
         User user = userService.loadUserByUsername(username);
         Set<BoardMembership> userBoards = user.getBoardMemberships();
         for (BoardMembership next : userBoards) {
@@ -33,46 +32,43 @@ public class MembershipService {
         return EMembership.NOT_JOINED;
     }
 
-    public boolean changeMembershipStatus(ChangeMembershipRequest membershipRequest) {
-        User user = userService.loadUserByUsername(membershipRequest.getUsername());
-        if (membershipRequest.getMembership() == EMembership.NOT_JOINED) {
-            return removeUserFromBoard(user, membershipRequest.getBoardId());
+    boolean changeMembershipStatus(User user, Board board, EMembership membership) {
+        if (membership == EMembership.NOT_JOINED) {
+            return removeUserFromBoard(user, board.getBoardId());
         }
-
-        if (membershipRequest.getMembership() == EMembership.CREATOR) {
+        if (membership == EMembership.CREATOR) {
             return false;
         }
-
         Set<BoardMembership> userBoards = user.getBoardMemberships();
         for (BoardMembership next : userBoards) {
-            if (next.getBoard().getBoardId().equals(membershipRequest.getBoardId())) {
+            if (next.getBoard().getBoardId().equals(board.getBoardId())) {
                 if (next.getStatus() == EMembership.CREATOR) {
                     return false;
                 } else {
-                    next.setStatus(membershipRequest.getMembership());
+                    next.setStatus(membership);
                     membershipRepository.save(next);
                     return true;
                 }
             }
         }
-        return createBoardMembership(membershipRequest);
+        return createBoardMembership(user, board, membership);
     }
 
-    public boolean createBoardMembership(ChangeMembershipRequest membershipRequest) {
-        if (findMembershipStatus(membershipRequest.getUsername(), membershipRequest.getBoardId()) != EMembership.NOT_JOINED) {
+    public boolean createBoardMembership(User user, Board board, EMembership membership) {
+        if (findMembershipStatus(user.getUsername(), board.getBoardId())
+                != EMembership.NOT_JOINED) {
             return true;
         }
-        User user = userService.loadUserByUsername(membershipRequest.getUsername());
-        Board board = boardService.loadBoardByBoardId(membershipRequest.getBoardId());
-        if (user == null || board == null) {
-            return false;
-        }
+        createMembership(user, board, membership);
+        return true;
+    }
+
+    private void createMembership(User user, Board board, EMembership membership) {
         BoardMembership newBoardMembership = new BoardMembership();
         newBoardMembership.setUser(user);
         newBoardMembership.setBoard(board);
-        newBoardMembership.setStatus(membershipRequest.getMembership());
+        newBoardMembership.setStatus(membership);
         membershipRepository.save(newBoardMembership);
-        return true;
     }
 
     public boolean removeUserFromBoard(User user, String boardId) {
@@ -90,6 +86,14 @@ public class MembershipService {
             }
         }
         return false;
+    }
+
+    public boolean doesMembershipExist(User user, Board board) {
+        BoardMembershipId membershipId = new BoardMembershipId();
+        membershipId.setUser(user);
+        membershipId.setBoard(board);
+        Optional<BoardMembership> boardMembership = membershipRepository.findById(membershipId);
+        return boardMembership.isPresent();
     }
 }
 

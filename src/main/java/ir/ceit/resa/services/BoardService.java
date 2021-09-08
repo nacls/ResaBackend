@@ -1,14 +1,19 @@
 package ir.ceit.resa.services;
 
 import ir.ceit.resa.model.Board;
+import ir.ceit.resa.model.BoardMembership;
+import ir.ceit.resa.model.EMembership;
+import ir.ceit.resa.model.User;
 import ir.ceit.resa.payload.request.ChangeMembershipRequest;
+import ir.ceit.resa.payload.request.CreateBoardRequest;
 import ir.ceit.resa.payload.request.EditBoardRequest;
+import ir.ceit.resa.payload.request.SearchBoardRequest;
 import ir.ceit.resa.payload.response.BoardInfoResponse;
 import ir.ceit.resa.repository.BoardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class BoardService {
@@ -35,7 +40,7 @@ public class BoardService {
         return null;
     }
 
-    public String getBoardCreatorByBoardId(String boardId) {
+    private String getBoardCreatorByBoardId(String boardId) {
         Board board = loadBoardByBoardId(boardId);
         if (board != null) {
             return board.getCreatorUsername();
@@ -63,9 +68,25 @@ public class BoardService {
                 announcementService.getBoardLatestAnnouncement(board));
     }
 
+    private BoardInfoResponse getBoardInfoResponse(String username, Board board, EMembership membership) {
+        return new BoardInfoResponse(board.getId(),
+                board.getBoardId(),
+                board.getDescription(),
+                board.getCategory(),
+                board.getCreatorUsername(),
+                board.getFaculty(),
+                membership,
+                announcementService.getBoardLatestAnnouncement(board));
+    }
+
     public boolean changeBoardMembershipStatus(ChangeMembershipRequest changeMembershipRequest) {
         if (isLoggedInUserBoardCreator(changeMembershipRequest.getBoardId())) {
-            return membershipService.changeMembershipStatus(changeMembershipRequest);
+            User user = userService.loadUserByUsername(changeMembershipRequest.getUsername());
+            Board board = loadBoardByBoardId(changeMembershipRequest.getBoardId());
+            EMembership membership = changeMembershipRequest.getMembership();
+            if (user == null || board == null)
+                return false;
+            return membershipService.changeMembershipStatus(user, board, membership);
         }
         return false;
     }
@@ -74,5 +95,53 @@ public class BoardService {
         String boardCreatorUsername = getBoardCreatorByBoardId(boardId);
         String loggedInUser = userService.getLoggedInUser().getUsername();
         return boardCreatorUsername.equalsIgnoreCase(loggedInUser);
+    }
+
+    public List<BoardInfoResponse> searchInBoards(SearchBoardRequest searchBoardRequest, String username) {
+        String searchKeyword = searchBoardRequest.getBoardId();
+        List<Board> searchResultBoards = boardRepository.findByBoardIdContaining(searchKeyword);
+        List<BoardInfoResponse> infoBoards = new ArrayList<>();
+        for (Board searchResultBoard : searchResultBoards) {
+            BoardInfoResponse temp = getBoardInfoResponse(username, searchResultBoard);
+            infoBoards.add(temp);
+        }
+        Collections.sort(infoBoards);
+        return infoBoards;
+    }
+
+    public List<BoardInfoResponse> getUserJoinedBoards(User user) {
+        List<BoardInfoResponse> boardInfoResponses = new ArrayList<>();
+        Set<BoardMembership> boardMemberships = user.getBoardMemberships();
+        for (BoardMembership next : boardMemberships) {
+            BoardInfoResponse temp = getBoardInfoResponse(user.getUsername(), next.getBoard());
+            boardInfoResponses.add(temp);
+        }
+        Collections.sort(boardInfoResponses);
+        return boardInfoResponses;
+    }
+
+    public BoardInfoResponse createBoard(CreateBoardRequest createBoardRequest, User user) throws InterruptedException {
+        Board board = new Board(createBoardRequest.getBoardId(),
+                createBoardRequest.getDescription(),
+                createBoardRequest.getCategory(),
+                user.getUsername(),
+                createBoardRequest.getFaculty());
+        boardRepository.save(board);
+        Board existingBoard = loadBoardByBoardId(board.getBoardId());
+        membershipService.createBoardMembership(user, existingBoard, EMembership.CREATOR);
+        return getBoardInfoResponse(user.getUsername(), existingBoard, EMembership.CREATOR);
+    }
+
+    public boolean canUserEditBoard(User user, String boardId) {
+        return user.getUsername().equals(getBoardCreatorByBoardId(boardId));
+    }
+
+    public boolean canUserWriterOnBoard(User user, String boardId) {
+        EMembership membership = membershipService.findMembershipStatus(user.getUsername(), boardId);
+        return membership == EMembership.WRITER || membership == EMembership.CREATOR;
+    }
+
+    public void deleteBoardById(Long id){
+        boardRepository.deleteById(id);
     }
 }
