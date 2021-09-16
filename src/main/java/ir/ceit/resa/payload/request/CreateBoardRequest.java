@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
+import java.util.Date;
 
 public class CreateBoardRequest {
 
@@ -25,6 +26,9 @@ public class CreateBoardRequest {
     @Size(max = 100)
     @JsonProperty("faculty")
     private String faculty;
+
+    @JsonProperty("timestamp")
+    private Date creationDate;
 
 
     public String getBoardId() {
@@ -57,5 +61,13 @@ public class CreateBoardRequest {
 
     public void setFaculty(String faculty) {
         this.faculty = faculty;
+    }
+
+    public Date getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(Date creationDate) {
+        this.creationDate = creationDate;
     }
 }

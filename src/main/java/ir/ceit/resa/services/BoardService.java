@@ -4,10 +4,7 @@ import ir.ceit.resa.model.Board;
 import ir.ceit.resa.model.BoardMembership;
 import ir.ceit.resa.model.EMembership;
 import ir.ceit.resa.model.User;
-import ir.ceit.resa.payload.request.ChangeMembershipRequest;
-import ir.ceit.resa.payload.request.CreateBoardRequest;
-import ir.ceit.resa.payload.request.EditBoardRequest;
-import ir.ceit.resa.payload.request.SearchBoardRequest;
+import ir.ceit.resa.payload.request.*;
 import ir.ceit.resa.payload.response.BoardInfoResponse;
 import ir.ceit.resa.repository.BoardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,7 +117,7 @@ public class BoardService {
         return boardInfoResponses;
     }
 
-    public BoardInfoResponse createBoard(CreateBoardRequest createBoardRequest, User user){
+    public BoardInfoResponse createBoard(CreateBoardRequest createBoardRequest, User user) {
         Board board = new Board(createBoardRequest.getBoardId(),
                 createBoardRequest.getDescription(),
                 createBoardRequest.getCategory(),
@@ -129,7 +126,20 @@ public class BoardService {
         boardRepository.save(board);
         Board existingBoard = loadBoardByBoardId(board.getBoardId());
         membershipService.createBoardMembership(user, existingBoard, EMembership.CREATOR);
+        announcementService.postAnnouncementToBoard(existingBoard,
+                user.getUsername(),
+                getBoardFirstAnnouncement(createBoardRequest.getCreationDate(),
+                        user,
+                        existingBoard.getBoardId()));
         return getBoardInfoResponse(user.getUsername(), existingBoard, EMembership.CREATOR);
+    }
+
+    private CreateAnnouncementRequest getBoardFirstAnnouncement(Date creationDate, User user, String boardId) {
+        CreateAnnouncementRequest announcementRequest = new CreateAnnouncementRequest();
+        announcementRequest.setCreationDate(creationDate);
+        String boardCreation = "برد " + boardId + " توسط " + user.getFullName() + " ایجاد شد.";
+        announcementRequest.setMessage(boardCreation);
+        return announcementRequest;
     }
 
     public boolean canUserEditBoard(User user, String boardId) {
@@ -141,7 +151,7 @@ public class BoardService {
         return membership == EMembership.WRITER || membership == EMembership.CREATOR;
     }
 
-    public void deleteBoardById(Long id){
+    public void deleteBoardById(Long id) {
         boardRepository.deleteById(id);
     }
 }

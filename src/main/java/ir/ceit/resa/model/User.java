@@ -154,4 +154,8 @@ public class User {
     public void deleteBoard(BoardMembership boardMembership) {
         this.boardMemberships.remove(boardMembership);
     }
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }
