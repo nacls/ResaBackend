@@ -59,7 +59,7 @@ public class BoardService {
                 board.getBoardId(),
                 board.getDescription(),
                 board.getCategory(),
-                board.getCreatorUsername(),
+                getBoardCreatorFullName(board),
                 board.getFaculty(),
                 membershipService.findMembershipStatus(username, board.getBoardId()),
                 announcementService.getBoardLatestAnnouncement(board));
@@ -70,7 +70,7 @@ public class BoardService {
                 board.getBoardId(),
                 board.getDescription(),
                 board.getCategory(),
-                board.getCreatorUsername(),
+                getBoardCreatorFullName(board),
                 board.getFaculty(),
                 membership,
                 announcementService.getBoardLatestAnnouncement(board));
@@ -153,5 +153,10 @@ public class BoardService {
 
     public void deleteBoardById(Long id) {
         boardRepository.deleteById(id);
+    }
+
+    private String getBoardCreatorFullName(Board board){
+        User creator = userService.loadUserByUsername(board.getCreatorUsername());
+        return creator.getFullName();
     }
 }

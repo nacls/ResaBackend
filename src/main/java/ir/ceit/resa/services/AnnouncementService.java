@@ -2,6 +2,7 @@ package ir.ceit.resa.services;
 
 import ir.ceit.resa.model.Announcement;
 import ir.ceit.resa.model.Board;
+import ir.ceit.resa.model.User;
 import ir.ceit.resa.payload.request.CreateAnnouncementRequest;
 import ir.ceit.resa.repository.AnnouncementRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,9 @@ public class AnnouncementService {
 
     @Autowired
     private BoardService boardService;
+
+    @Autowired
+    private UserService userService;
 
     public Announcement getBoardLatestAnnouncement(Board board) {
         if (board.getAnnouncements() == null) {
@@ -42,9 +46,10 @@ public class AnnouncementService {
     public void postAnnouncementToBoard(Board board
             , String writerUsername
             , CreateAnnouncementRequest announcementRequest) {
+        User writer = userService.loadUserByUsername(writerUsername);
         Announcement announcement = new Announcement(announcementRequest.getCreationDate(),
                 announcementRequest.getMessage(),
-                writerUsername,
+                writer.getFullName(),
                 board);
         announcementRepository.save(announcement);
     }

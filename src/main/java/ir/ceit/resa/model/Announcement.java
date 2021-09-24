@@ -23,6 +23,7 @@ public class Announcement implements Comparable<Announcement> {
 
     @NotBlank
     @JsonProperty("message")
+    @Column(length = 4096)
     private String message;
 
     @NotBlank

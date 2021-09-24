@@ -20,7 +20,7 @@ public class BoardInfoResponse implements Comparable<BoardInfoResponse> {
     private String category;
 
     @JsonProperty("creator_username")
-    private String creatorUsername;
+    private String creatorFullName;
 
     @JsonProperty("faculty")
     private String faculty;
@@ -40,7 +40,7 @@ public class BoardInfoResponse implements Comparable<BoardInfoResponse> {
         this.boardId = boardId;
         this.description = description;
         this.category = category;
-        this.creatorUsername = creatorUsername;
+        this.creatorFullName = creatorUsername;
         this.faculty = faculty;
         this.userMembership = userMembership;
         this.latestAnnouncement = latestAnnouncement;
@@ -78,12 +78,12 @@ public class BoardInfoResponse implements Comparable<BoardInfoResponse> {
         this.category = category;
     }
 
-    public String getCreatorUsername() {
-        return creatorUsername;
+    public String getCreatorFullName() {
+        return creatorFullName;
     }
 
-    public void setCreatorUsername(String creatorUsername) {
-        this.creatorUsername = creatorUsername;
+    public void setCreatorFullName(String creatorFullName) {
+        this.creatorFullName = creatorFullName;
     }
 
     public String getFaculty() {
