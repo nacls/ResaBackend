@@ -94,7 +94,6 @@ public class BoardController {
         }
     }
 
-
     @PutMapping("/leave/{boardId}")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> userLeaveBoard(@PathVariable String boardId) {
@@ -108,7 +107,6 @@ public class BoardController {
             return ResponseEntity.badRequest().body(new MessageResponse("user doesn't exist"));
         }
     }
-
 
     @DeleteMapping("/delete/{boardId}")
     @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
@@ -138,7 +136,6 @@ public class BoardController {
         }
     }
 
-
     @PutMapping("/edit/{boardId}")
     @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> editBoard(@PathVariable String boardId, @Valid @RequestBody EditBoardRequest editBoardRequest) {
@@ -157,7 +154,6 @@ public class BoardController {
         }
         return ResponseEntity.badRequest().body(new MessageResponse("User not found"));
     }
-
 
     @PutMapping("/access-control")
     @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
