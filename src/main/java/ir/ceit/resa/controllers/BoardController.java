@@ -33,7 +33,7 @@ public class BoardController {
     @Autowired
     UserService userService;
 
-    @GetMapping("/search")
+    @PostMapping("/search")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> searchBoards(@Valid @RequestBody SearchBoardRequest searchBoardRequest) {
         User user = userService.getLoggedInUser();
@@ -57,7 +57,7 @@ public class BoardController {
 
     @PostMapping("/create")
     @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
-    public ResponseEntity<?> createBoard(@Valid @RequestBody CreateBoardRequest createBoardRequest){
+    public ResponseEntity<?> createBoard(@Valid @RequestBody CreateBoardRequest createBoardRequest) {
         Board board = boardService.loadBoardByBoardId(createBoardRequest.getBoardId());
         if (board != null) {
             return ResponseEntity
@@ -81,7 +81,7 @@ public class BoardController {
         Board board = boardService.loadBoardByBoardId(boardId);
         if (user != null && board != null) {
             if (membershipService.createBoardMembership(user, board, EMembership.REGULAR_MEMBER)) {
-                return ResponseEntity.ok().body("Membership added");
+                return ResponseEntity.ok().body(new MessageResponse("Membership added"));
             } else {
                 return ResponseEntity
                         .badRequest()
