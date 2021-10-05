@@ -6,6 +6,7 @@ import ir.ceit.resa.model.EMembership;
 import ir.ceit.resa.model.User;
 import ir.ceit.resa.payload.request.*;
 import ir.ceit.resa.payload.response.BoardInfoResponse;
+import ir.ceit.resa.payload.response.BoardMemberResponse;
 import ir.ceit.resa.repository.BoardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -63,6 +64,22 @@ public class BoardService {
                 board.getFaculty(),
                 membershipService.findMembershipStatus(username, board.getBoardId()),
                 announcementService.getBoardLatestAnnouncement(board));
+    }
+
+    public List<BoardMemberResponse> getBoardMembers(Board board) {
+        List<BoardMemberResponse> boardMembers = new ArrayList<>();
+        Set<BoardMembership> memberships = board.getBoardMemberships();
+
+        for (BoardMembership next : memberships) {
+            BoardMemberResponse temp = new BoardMemberResponse(
+                    next.getUser().getUsername(),
+                    next.getUser().getFullName(),
+                    next.getStatus());
+            boardMembers.add(temp);
+        }
+        boardMembers.sort(Collections.reverseOrder());
+        return boardMembers;
+
     }
 
     private BoardInfoResponse getBoardInfoResponse(String username, Board board, EMembership membership) {
@@ -155,7 +172,7 @@ public class BoardService {
         boardRepository.deleteById(id);
     }
 
-    private String getBoardCreatorFullName(Board board){
+    private String getBoardCreatorFullName(Board board) {
         User creator = userService.loadUserByUsername(board.getCreatorUsername());
         return creator.getFullName();
     }

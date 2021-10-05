@@ -182,4 +182,22 @@ public class BoardController {
         }
         return ResponseEntity.ok(boardService.getBoardInfoResponse(user.getUsername(), board));
     }
+
+    @GetMapping("/writers/{boardId}")
+    @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
+    public ResponseEntity<?> getBoardWriters(@PathVariable String boardId) {
+        Board board = boardService.loadBoardByBoardId(boardId);
+        User user = userService.getLoggedInUser();
+        if (board == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: board doesn't exist!"));
+        }
+        if (user == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: user doesn't exist!"));
+        }
+        return ResponseEntity.ok(boardService.getBoardMembers(board));
+    }
 }
