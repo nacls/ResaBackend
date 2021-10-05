@@ -108,6 +108,25 @@ public class BoardController {
         }
     }
 
+    @PutMapping("/edit/{boardId}")
+    @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
+    public ResponseEntity<?> editBoard(@PathVariable String boardId, @Valid @RequestBody EditBoardRequest editBoardRequest) {
+        User user = userService.getLoggedInUser();
+        if (user != null) {
+            if (boardService.canUserEditBoard(user, boardId)) {
+                if (boardService.loadBoardByBoardId(boardId) != null) {
+                    return ResponseEntity.ok()
+                            .body(boardService.editBoard(user.getUsername(), boardId, editBoardRequest));
+                } else {
+                    return ResponseEntity.badRequest().body(new MessageResponse("Board not found"));
+                }
+            } else {
+                return ResponseEntity.badRequest().body(new MessageResponse("Not creator, access denied"));
+            }
+        }
+        return ResponseEntity.badRequest().body(new MessageResponse("User not found"));
+    }
+
     @DeleteMapping("/delete/{boardId}")
     @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> deleteBoard(@PathVariable String boardId) {
@@ -136,23 +155,22 @@ public class BoardController {
         }
     }
 
-    @PutMapping("/edit/{boardId}")
-    @PreAuthorize("hasRole('CREATOR') or hasRole('ADMIN')")
-    public ResponseEntity<?> editBoard(@PathVariable String boardId, @Valid @RequestBody EditBoardRequest editBoardRequest) {
+    @GetMapping("/writers/{boardId}")
+    @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
+    public ResponseEntity<?> getBoardWriters(@PathVariable String boardId) {
+        Board board = boardService.loadBoardByBoardId(boardId);
         User user = userService.getLoggedInUser();
-        if (user != null) {
-            if (boardService.canUserEditBoard(user, boardId)) {
-                if (boardService.loadBoardByBoardId(boardId) != null) {
-                    return ResponseEntity.ok()
-                            .body(boardService.editBoard(user.getUsername(), boardId, editBoardRequest));
-                } else {
-                    return ResponseEntity.badRequest().body(new MessageResponse("Board not found"));
-                }
-            } else {
-                return ResponseEntity.badRequest().body(new MessageResponse("Not creator, access denied"));
-            }
+        if (board == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: board doesn't exist!"));
         }
-        return ResponseEntity.badRequest().body(new MessageResponse("User not found"));
+        if (user == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: user doesn't exist!"));
+        }
+        return ResponseEntity.ok(boardService.getBoardMembers(board));
     }
 
     @PutMapping("/access-control")
@@ -164,6 +182,7 @@ public class BoardController {
             return ResponseEntity.badRequest().body(new MessageResponse("Something went wrong"));
         }
     }
+
 
     @GetMapping("/get/{boardId}")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
@@ -181,23 +200,5 @@ public class BoardController {
                     .body(new MessageResponse("Error: user doesn't exist!"));
         }
         return ResponseEntity.ok(boardService.getBoardInfoResponse(user.getUsername(), board));
-    }
-
-    @GetMapping("/writers/{boardId}")
-    @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
-    public ResponseEntity<?> getBoardWriters(@PathVariable String boardId) {
-        Board board = boardService.loadBoardByBoardId(boardId);
-        User user = userService.getLoggedInUser();
-        if (board == null) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: board doesn't exist!"));
-        }
-        if (user == null) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: user doesn't exist!"));
-        }
-        return ResponseEntity.ok(boardService.getBoardMembers(board));
     }
 }
