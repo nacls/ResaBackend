@@ -113,7 +113,7 @@ public class BoardService {
 
     public List<BoardInfoResponse> searchInBoards(SearchBoardRequest searchBoardRequest, String username) {
         String searchKeyword = searchBoardRequest.getBoardId();
-        List<Board> searchResultBoards = boardRepository.findByBoardIdContaining(searchKeyword);
+        List<Board> searchResultBoards = boardRepository.findByBoardIdOrBoardTitleContaining(searchKeyword);
         List<BoardInfoResponse> infoBoards = new ArrayList<>();
         for (Board searchResultBoard : searchResultBoards) {
             BoardInfoResponse temp = getBoardInfoResponse(username, searchResultBoard);

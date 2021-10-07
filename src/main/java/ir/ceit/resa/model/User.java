@@ -50,6 +50,10 @@ public class User {
     @JsonProperty("lastName")
     private String lastName;
 
+    @Size(max = 100)
+    @JsonProperty("faculty")
+    private String faculty;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -65,13 +69,18 @@ public class User {
     public User() {
     }
 
-    public User(String username, String email, String password, String firstName, String lastName) {
+    public User(String username,
+                String email,
+                String password,
+                String firstName, String lastName,
+                String faculty) {
         this.username = username;
         this.email = email;
         this.password = password;
         this.loggedIn = false;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.faculty = faculty;
     }
 
     public Long getId() {
@@ -145,6 +154,14 @@ public class User {
 
     public void setBoardMemberships(Set<BoardMembership> boardMemberships) {
         this.boardMemberships = boardMemberships;
+    }
+
+    public String getFaculty() {
+        return faculty;
+    }
+
+    public void setFaculty(String faculty) {
+        this.faculty = faculty;
     }
 
     public void addBoard(BoardMembership boardMembership) {

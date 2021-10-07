@@ -27,11 +27,14 @@ public class UserDetailsImpl implements UserDetails {
 
     private String lastName;
 
+    private String faculty;
+
     private Collection<? extends GrantedAuthority> authorities;
 
     public UserDetailsImpl(Long id, String username, String email, String password,
                            Collection<? extends GrantedAuthority> authorities,
-                           String firstName, String lastName) {
+                           String firstName, String lastName,
+                           String faculty) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -39,6 +42,7 @@ public class UserDetailsImpl implements UserDetails {
         this.authorities = authorities;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.faculty = faculty;
     }
 
     public static UserDetailsImpl build(User user) {
@@ -53,7 +57,8 @@ public class UserDetailsImpl implements UserDetails {
                 user.getPassword(),
                 authorities,
                 user.getFirstName(),
-                user.getLastName());
+                user.getLastName(),
+                user.getFaculty());
     }
 
     @Override
@@ -85,6 +90,10 @@ public class UserDetailsImpl implements UserDetails {
 
     public String getLastName() {
         return lastName;
+    }
+
+    public String getFaculty() {
+        return faculty;
     }
 
     @Override

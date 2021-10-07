@@ -29,6 +29,9 @@ public class AddUserRequest {
     @Size(max = 40)
     private String lastName;
 
+    @Size(max = 100)
+    private String faculty;
+
     public String getUsername() {
         return username;
     }
@@ -75,5 +78,13 @@ public class AddUserRequest {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getFaculty() {
+        return faculty;
+    }
+
+    public void setFaculty(String faculty) {
+        this.faculty = faculty;
     }
 }

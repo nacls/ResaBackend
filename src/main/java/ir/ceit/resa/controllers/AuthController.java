@@ -74,7 +74,8 @@ public class AuthController {
                 userDetails.getEmail(),
                 roles,
                 userDetails.getFirstName(),
-                userDetails.getLastName()));
+                userDetails.getLastName(),
+                userDetails.getFaculty()));
     }
 
     @GetMapping("/logout")
@@ -102,7 +103,8 @@ public class AuthController {
                 signUpRequest.getEmail(),
                 encoder.encode(signUpRequest.getPassword()),
                 signUpRequest.getFirstName(),
-                signUpRequest.getLastName());
+                signUpRequest.getLastName(),
+                signUpRequest.getFaculty());
 
         Set<String> strRoles = signUpRequest.getRole();
         Set<Role> roles = new HashSet<>();

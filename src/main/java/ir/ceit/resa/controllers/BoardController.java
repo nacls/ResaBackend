@@ -155,9 +155,9 @@ public class BoardController {
         }
     }
 
-    @GetMapping("/writers/{boardId}")
+    @GetMapping("/members/{boardId}")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
-    public ResponseEntity<?> getBoardWriters(@PathVariable String boardId) {
+    public ResponseEntity<?> getBoardMembers(@PathVariable String boardId) {
         Board board = boardService.loadBoardByBoardId(boardId);
         User user = userService.getLoggedInUser();
         if (board == null) {
