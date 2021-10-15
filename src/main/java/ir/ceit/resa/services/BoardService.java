@@ -115,9 +115,12 @@ public class BoardService {
         String searchKeyword = searchBoardRequest.getBoardId();
         List<Board> searchResultBoards = boardRepository.findByBoardIdOrBoardTitleContaining(searchKeyword);
         List<BoardInfoResponse> infoBoards = new ArrayList<>();
+        String faculty = userService.loadUserByUsername(username).getFaculty();
         for (Board searchResultBoard : searchResultBoards) {
-            BoardInfoResponse temp = getBoardInfoResponse(username, searchResultBoard);
-            infoBoards.add(temp);
+            if (canUserAccessBoardBasedOnFaculty( searchResultBoard, faculty)){
+                BoardInfoResponse temp = getBoardInfoResponse(username, searchResultBoard);
+                infoBoards.add(temp);
+            }
         }
         Collections.sort(infoBoards);
         return infoBoards;
@@ -181,14 +184,18 @@ public class BoardService {
         List<Board> searchResultBoards = boardRepository.findAll();
         List<BoardInfoResponse> infoBoards = new ArrayList<>();
         for (Board searchResultBoard : searchResultBoards) {
-            if (searchResultBoard.getFaculty() == null ||
-                    searchResultBoard.getFaculty().isEmpty() ||
-                    searchResultBoard.getFaculty().equals(faculty)){
+            if (canUserAccessBoardBasedOnFaculty(searchResultBoard, faculty)) {
                 BoardInfoResponse temp = getBoardInfoResponse(username, searchResultBoard);
                 infoBoards.add(temp);
             }
         }
         Collections.sort(infoBoards);
         return infoBoards;
+    }
+
+    private boolean canUserAccessBoardBasedOnFaculty(Board board, String userFaculty) {
+        return board.getFaculty() == null ||
+                board.getFaculty().isEmpty() ||
+                board.getFaculty().equals(userFaculty);
     }
 }
