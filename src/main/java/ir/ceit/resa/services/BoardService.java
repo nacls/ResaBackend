@@ -183,8 +183,7 @@ public class BoardService {
         for (Board searchResultBoard : searchResultBoards) {
             if (searchResultBoard.getFaculty() == null ||
                     searchResultBoard.getFaculty().isEmpty() ||
-                    searchResultBoard.getFaculty().equals(faculty) ||
-                    searchResultBoard.getFaculty().equals("کل")){
+                    searchResultBoard.getFaculty().equals(faculty)){
                 BoardInfoResponse temp = getBoardInfoResponse(username, searchResultBoard);
                 infoBoards.add(temp);
             }
