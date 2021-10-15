@@ -176,4 +176,20 @@ public class BoardService {
         User creator = userService.loadUserByUsername(board.getCreatorUsername());
         return creator.getFullName();
     }
+
+    public List<BoardInfoResponse> getAllPossibleBoards(String faculty, String username) {
+        List<Board> searchResultBoards = boardRepository.findAll();
+        List<BoardInfoResponse> infoBoards = new ArrayList<>();
+        for (Board searchResultBoard : searchResultBoards) {
+            if (searchResultBoard.getFaculty() == null ||
+                    searchResultBoard.getFaculty().isEmpty() ||
+                    searchResultBoard.getFaculty().equals(faculty) ||
+                    searchResultBoard.getFaculty().equals("کل")){
+                BoardInfoResponse temp = getBoardInfoResponse(username, searchResultBoard);
+                infoBoards.add(temp);
+            }
+        }
+        Collections.sort(infoBoards);
+        return infoBoards;
+    }
 }

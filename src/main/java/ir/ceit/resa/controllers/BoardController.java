@@ -43,6 +43,16 @@ public class BoardController {
         return ResponseEntity.ok(boardService.searchInBoards(searchBoardRequest, user.getUsername()));
     }
 
+    @GetMapping("/get-all")
+    @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
+    public ResponseEntity<?> getAllPossibleBoards() {
+        User user = userService.getLoggedInUser();
+        if (user == null) {
+            return ResponseEntity.badRequest().body(new MessageResponse("user doesn't exist"));
+        }
+        return ResponseEntity.ok(boardService.getAllPossibleBoards(user.getFaculty(), user.getUsername()));
+    }
+
     @GetMapping("/joined/{username}")
     @PreAuthorize("hasRole('USER') or hasRole('CREATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> getUserJoinedBoards(@PathVariable("username") String username) {
